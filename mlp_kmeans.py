@@ -10,15 +10,17 @@ from matplotlib import pyplot as plt
 
 from torchvision.datasets import ImageFolder
 from torch.utils.data import DataLoader
+import torchsummary
+import itertools
 
 """paramters"""
-train_dataroot = "../daon_data/ishikawa_with_fake/"
+train_dataroot = "../daon_data/ishikawa_data/"
 test_dataroot = "../daon_data/nagoya_data/"
 batch_size = 64
 num_classes = 2
-num_epochs = 1000
+num_epochs = 100
 lr = 0.01
-check_interval = 100 
+check_interval = 10
 
 """paramters end."""
 
@@ -45,7 +47,10 @@ class MLPNet(nn.Module):
         x = self.dropout2(x)
         return F.relu(self.fc3(x))
 
+
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+"""
 net = MLPNet().to(device)
 
 criterion = nn.CrossEntropyLoss()
@@ -121,7 +126,46 @@ plt.title('Training and validation accuracy')
 plt.grid()
 
 plt.show()
+"""
+# load checkpoint
+cptfile = "../daon_checkpoint/mlp_epoch_10.cpt"
+cpt = torch.load(cptfile)
+stdict_net = cpt['mlp_state_dict']
+net_pretrained = MLPNet().to(device)
+net_pretrained.load_state_dict(stdict_net)
+torchsummary.summary(net_pretrained, (2, 28*28*3))
 
+nagoya_data_list = np.empty((0,2))
+nagoya_label = np.empty(0)
+print(f'nagoya_data_list.shape = {nagoya_data_list.shape}')
+net_pretrained.eval()
+with torch.no_grad():
+    for images, labels in test_loader:
+        images, labels = images.view(-1, 28*28*3).to(device), labels.to(device)
+        outputs = net_pretrained(images)
+        print(outputs.shape)
+        nagoya_data_list = np.append(nagoya_data_list, outputs.to('cpu').detach().numpy(), axis=0)
+        nagoya_label = np.append(nagoya_label, labels.to('cpu').detach().numpy())
 
+print(nagoya_data_list)
+nagoya_data = np.array(nagoya_data_list)
+print(nagoya_data.shape)
+print(nagoya_label.shape)
 
+print(nagoya_data[nagoya_label == 1])
+plt.figure()
+#colors = ['navy', 'blue']
+#for color, i in zip(colors, [0,1]):
+#    plt.scatter(nagoya_data[nagoya_label == i, 0], nagoya_data[nagoya_label == i, 1], color=color)
+
+plt.plot(nagoya_data[nagoya_label == 1,0], nagoya_data[nagoya_label == 1, 1], 'bo')
+plt.plot(nagoya_data[nagoya_label == 0,0], nagoya_data[nagoya_label == 0, 1], 'ro')
+#plt.plot(nagoya_data[:,0], nagoya_data[:,1], label=nagoya_label)
+#plt.legend()
+#plt.xlabel('epoch')
+plt.ylabel('loss')
+#plt.title('Training and validation loss')
+plt.grid()
+
+plt.show()
 
