@@ -24,7 +24,7 @@ import pandas as pd
 
 """paramters"""
 train_dataroot = "../daon_data/ishikawa_data/"  #"../daon_data/ishikawa_with_fake/"
-test_dataroot = "../daon_data/ishikawa_test/" #"../daon_data/nagoya_data/"
+test_dataroot = "../daon_data/nagoya_data/" #"../daon_data/nagoya_data/"
 batch_size = 64
 num_classes = 2
 num_epochs = 500 #200
@@ -265,11 +265,11 @@ if __name__ == "__main__":
         graph_learning(loss_acc)
 
     else:
-        ckpt = 100
+        ckpt = 200
         print(f'check point = {ckpt}')
         cptfile = f"../daon_checkpoint/lenet_epoch_{ckpt}.cpt"
-        #display_features(cptfile)
-        features, labels = obtain_features(cptfile)
+        display_features(cptfile)
+        """ features, labels = obtain_features(cptfile)
         print(features.shape)
         print(labels.shape)
         num_components = 2
@@ -279,7 +279,7 @@ if __name__ == "__main__":
         print(labels)
         data = {'true': labels, 'probability': proba[:,0]}
         df = pd.DataFrame(data)
-        df.to_csv('test.csv', encoding='utf-8')
+        df.to_csv('test.csv', encoding='utf-8') """
 
 
 
