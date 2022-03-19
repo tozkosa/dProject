@@ -1,6 +1,7 @@
 import os
 import pandas as pd
-DATA_ROOT = "../daon_data/ishikawa_test"
+#DATA_ROOT = "../daon_data/ishikawa_test"
+DATA_ROOT = "../daon_data/ishikawa_test_small_wave"
 
 def list_of_dirs(data_root):
     print("inside list of dirs")
@@ -18,7 +19,7 @@ def list_of_dirs(data_root):
     data = {'fname': file_name}
     df = pd.DataFrame(data)
     print(df)
-    df.to_csv('test.csv', encoding='utf-8')
+    df.to_csv('test_ishikawa_wave.csv', encoding='utf-8')
         
 
 if __name__ == "__main__":

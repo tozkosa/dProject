@@ -24,7 +24,7 @@ import pandas as pd
 
 """paramters"""
 train_dataroot = "../daon_data/ishikawa_data/"  #"../daon_data/ishikawa_with_fake/"
-test_dataroot = "../daon_data/nagoya_data/" #"../daon_data/nagoya_data/"
+test_dataroot = "../daon_data/ishikawa_test/" #"../daon_data/nagoya_data/"
 batch_size = 64
 num_classes = 2
 num_epochs = 500 #200
@@ -32,9 +32,18 @@ lr = 0.01
 check_interval = 10
 """paramters end."""
 
+class ImageFolderWithPaths(ImageFolder):
+    def __getitem__(self, index):
+        original_tuple = super(ImageFolderWithPaths, self).__getitem__(index)
+        path = self.imgs[index][0]
+        tuple_with_path = (original_tuple + (path,))
+        return tuple_with_path
+
+test_dataset = ImageFolderWithPaths(test_dataroot, transform=transforms.ToTensor())
+
 
 train_dataset = ImageFolder(train_dataroot, transform=transforms.ToTensor())
-test_dataset = ImageFolder(test_dataroot, transform=transforms.ToTensor())
+#test_dataset = ImageFolder(test_dataroot, transform=transforms.ToTensor())
 
 # for i in range(100,200):
 #     image, label = train_dataset[i]
@@ -112,7 +121,7 @@ def learning(device):
 
         net.eval()
         with torch.no_grad():
-            for images, labels in test_loader:
+            for images, labels, paths in test_loader:
                 images, labels = images.to(device), labels.to(device)
                 outputs = net(images)
                 loss = criterion(outputs, labels)
@@ -196,18 +205,20 @@ def obtain_features(cptfile):
     net_pretrained.load_state_dict(stdict_net)
     nagoya_data_list = np.empty((0,400))
     nagoya_label = np.empty(0)
+    nagoya_data_path = np.empty(0)
     net_pretrained.eval()
     with torch.no_grad():
-        for images, labels in test_loader:
+        for images, labels, paths in test_loader:
             images, labels = images.to(device), labels.to(device)
             x = net_pretrained.features(images)
             x = x.view(x.size(0), -1)
             #print(x.shape)
             nagoya_data_list = np.append(nagoya_data_list, x.to('cpu').detach().numpy(), axis=0)
             nagoya_label = np.append(nagoya_label, labels.to('cpu').detach().numpy())
+            nagoya_data_path = np.append(nagoya_data_path, paths)
     #print(nagoya_data_list)
     nagoya_data = np.array(nagoya_data_list)
-    return nagoya_data, nagoya_label
+    return nagoya_data, nagoya_label, nagoya_data_path
 
 def display_features(cptfile):
     cpt = torch.load(cptfile)
@@ -217,9 +228,10 @@ def display_features(cptfile):
     net_pretrained.load_state_dict(stdict_net)
     nagoya_data_list = np.empty((0,400))
     nagoya_label = np.empty(0)
+    nagoya_data_path = np.empty(0)
     net_pretrained.eval()
     with torch.no_grad():
-        for images, labels in test_loader:
+        for images, labels, paths in test_loader:
             images, labels = images.to(device), labels.to(device)
             x = net_pretrained.features(images)
             x = x.view(x.size(0), -1)
@@ -260,6 +272,10 @@ if __name__ == "__main__":
 
     which  = 0 #1: learning 0:display
 
+    """ for inputs, labels, paths in test_loader:
+        for label, path in zip(labels, paths):
+            print(label, path) """
+
     if which:
         loss_acc = learning(device)
         graph_learning(loss_acc)
@@ -268,8 +284,8 @@ if __name__ == "__main__":
         ckpt = 200
         print(f'check point = {ckpt}')
         cptfile = f"../daon_checkpoint/lenet_epoch_{ckpt}.cpt"
-        display_features(cptfile)
-        """ features, labels = obtain_features(cptfile)
+        #display_features(cptfile)
+        features, labels, test_data_paths = obtain_features(cptfile)
         print(features.shape)
         print(labels.shape)
         num_components = 2
@@ -277,9 +293,21 @@ if __name__ == "__main__":
         prediction = gmm.predict(features)
         proba = gmm.predict_proba(features)
         print(labels)
-        data = {'true': labels, 'probability': proba[:,0]}
+        
+        lines = []
+        numbers = []
+        for path in test_data_paths:
+            fname = path.split("_")
+            line = fname[3]
+            number = fname[4]
+            lines.append(line)
+            numbers.append(number)
+            # print(line)
+            # print(fname[4])
+
+        data = {'line': lines, 'number': numbers, 'probability': proba[:,0]}
         df = pd.DataFrame(data)
-        df.to_csv('test.csv', encoding='utf-8') """
+        df.to_csv('test.csv', encoding='utf-8')
 
 
 
